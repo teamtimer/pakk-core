@@ -1,0 +1,21 @@
+{
+    "name": "teamtimer/pakk-core",
+    "description": "Pakk. A simple MVC framework for WordPress",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.1",
+        "cycle/orm": "^2.3",
+        "cycle/annotated": "^3.3"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^6.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeamTimer\\Pakk\\": "src/"
+        }
+    }
+}

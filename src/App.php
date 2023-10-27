@@ -2,12 +2,29 @@
 
 namespace TeamTimer\Pakk;
 
-use App\Base\BaseEntity;
-use App\Entities\User;
+use Symfony\Component\Console\Application;
 
 class App
 {
+    /**
+     * @var \Cycle\ORM\ORM
+     */
     public static $orm = null;
+
+    /**
+     * @var \Cycle\Database\DatabaseManager
+     */
+    public static $dbal = null;
+
+    /**
+     * @var \Cycle\ORM\SchemaInterface
+     */
+    public static $schema = null;
+
+    /**
+     * @var \Cycle\Schema\Registry
+     */
+    public static $registry = null;
 
     /**
      * App constructor.
@@ -46,22 +63,33 @@ class App
         // init the database
         $this->initDatabase();
 
-        // init admin menu
-        $this->initAdminMenu();
+        if (php_sapi_name() == 'cli') {
+            // we are running from the command line
+            $application = new \Symfony\Component\Console\Application();
+            $this->initConsoleCommands($application);
+            $application->run();
+        } else {
+            // we are running from the web
 
-        $requestURI = $_SERVER['REQUEST_URI'];
+            // init admin menu
+            $this->initAdminMenu();
 
-        //remove query string
-        $requestURI = strtok($requestURI, '?');
+            $requestURI = $_SERVER['REQUEST_URI'];
 
-        //remove trailing slash
-        $requestURI = rtrim($requestURI, '/');
+            //remove query string
+            $requestURI = strtok($requestURI, '?');
 
-        // check if we need to handle the request
-        if (array_key_exists($requestURI, $this->getUrls()['urls'])) {
-            $config = $this->getUrls()['urls'][$requestURI];
-            $this->handleRequest($config);
+            //remove trailing slash
+            $requestURI = rtrim($requestURI, '/');
+
+            // check if we need to handle the request
+            if (array_key_exists($requestURI, $this->getUrls()['urls'])) {
+                $config = $this->getUrls()['urls'][$requestURI];
+                $this->handleRequest($config);
+            }
         }
+
+
     }
 
     public function handleRequest($config)
@@ -81,6 +109,24 @@ class App
     {
         // get the urls from the config
         return require ABSPATH . 'src/Config/app.php';
+    }
+
+    public function initConsoleCommands(Application &$application)
+    {
+        // load all the commands
+        $commands = glob(ABSPATH . 'src/Console/Commands/*.php');
+
+        foreach ($commands as $commandName) {
+
+            //remove the .php extension
+            $commandName = str_replace('.php', '', $commandName);
+
+            $commandName = str_replace(ABSPATH . 'src/Console/Commands/', '', $commandName);
+            $command = 'App\\Console\\Commands\\' . $commandName;
+
+            // we just need the constructor to run
+            $application->add(new $command());
+        }
     }
 
     public function initAdminMenu()
@@ -146,6 +192,9 @@ class App
 
         // get the ORM
         App::$orm = new \Cycle\ORM\ORM(new \Cycle\ORM\Factory($dbal), new \Cycle\ORM\Schema($schema));
+        App::$dbal = $dbal;
+        App::$schema = $schema;
+        App::$registry = $registry;
 
     }
 }
